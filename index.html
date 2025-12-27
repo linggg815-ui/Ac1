@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>我的進階記帳 App</title>
+    <style>
+        body { font-family: -apple-system, system-ui, sans-serif; background: #f0f2f5; margin: 0; padding: 15px; display: flex; justify-content: center; }
+        .card { background: white; width: 100%; max-width: 450px; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); box-sizing: border-box; }
+        h2 { text-align: center; color: #333; margin: 0 0 10px 0; }
+        .balance { font-size: 28px; text-align: center; font-weight: bold; margin: 15px 0; color: #2c3e50; background: #e9ecef; padding: 10px; border-radius: 10px; }
+        label { font-size: 14px; color: #666; font-weight: bold; }
+        input, select, button { width: 100%; padding: 12px; margin: 5px 0 15px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        button { background: #007aff; color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button:active { background: #0056b3; }
+        .list-item { background: #fff; padding: 12px; border-bottom: 1px solid #eee; position: relative; }
+        .item-main { display: flex; justify-content: space-between; font-weight: bold; }
+        .item-sub { display: flex; justify-content: space-between; font-size: 12px; color: #888; margin-top: 4px; }
+        .income { color: #28a745; }
+        .expense { color: #dc3545; }
+        .del-btn { color: #ff3b30; font-size: 14px; cursor: pointer; border: none; background: none; padding: 0; font-weight: normal; width: auto; }
+        h3 { border-bottom: 2px solid #007aff; padding-bottom: 5px; color: #444; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>💰 記帳助手 2.0</h2>
+    <div class="balance">總餘額: $<span id="total">0.00</span></div>
+
+    <label>📅 日期</label>
+    <input type="date" id="date">
+
+    <label>📝 項目名稱</label>
+    <input type="text" id="name" placeholder="例如: 午餐、出糧">
+
+    <label>💵 金額</label>
+    <input type="number" id="amt" placeholder="0.00">
+
+    <label>💳 付款方式</label>
+    <select id="method">
+        <option value="Cash">💵 現金 (Cash)</option>
+        <option value="Credit Card">💳 信用卡 (Credit Card)</option>
+        <option value="Octopus">🐙 八達通 (Octopus)</option>
+        <option value="PayMe/FPS">📱 PayMe / 轉數快</option>
+        <option value="Bank">🏦 銀行轉帳</option>
+    </select>
+
+    <label>🔄 類型</label>
+    <select id="type">
+        <option value="expense">支出 (-)</option>
+        <option value="income">收入 (+)</option>
+    </select>
+
+    <button onclick="add()">新增紀錄</button>
+
+    <div id="history" style="margin-top: 20px;">
+        <h3>最近紀錄 (按日期排序)</h3>
+        <div id="items"></div>
+    </div>
+</div>
+
+<script>
+    // 初始化日期為今日
+    document.getElementById('date').valueAsDate = new Date();
+
+    let data = JSON.parse(localStorage.getItem('budget_data_v2')) || [];
+
+    function update() {
+        const list = document.getElementById('items');
+        const totalDisp = document.getElementById('total');
+        list.innerHTML = '';
+        let total = 0;
+
+        // 根據日期排序，最新日期喺上面
+        data.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        data.forEach((item, index) => {
+            const isExp = item.type === 'expense';
+            const val = isExp ? -item.amt : item.amt;
+            total += val;
+
+            list.innerHTML += `
+                <div class="list-item">
+                    <div class="item-main">
+                        <span>${item.name}</span>
+                        <span class="${isExp ? 'expense' : 'income'}">
+                            ${isExp ? '-' : '+'}$${item.amt.toFixed(2)}
+                        </span>
+                    </div>
+                    <div class="item-sub">
+                        <span>${item.date} • ${item.method}</span>
+                        <button class="del-btn" onclick="del(${index})">刪除</button>
+                    </div>
+                </div>
+            `;
+        });
+        totalDisp.innerText = total.toFixed(2);
+        localStorage.setItem('budget_data_v2', JSON.stringify(data));
+    }
+
+    function add() {
+        const date = document.getElementById('date').value;
+        const name = document.getElementById('name').value;
+        const amt = parseFloat(document.getElementById('amt').value);
+        const method = document.getElementById('method').value;
+        const type = document.getElementById('type').value;
+
+        if (!name || isNaN(amt) || !date) return alert('請填寫所有資料！');
+
+        data.push({ date, name, amt, method, type });
+        
+        // 清空輸入框（保留日期同方法，方便連續輸入）
+        document.getElementById('name').value = '';
+        document.getElementById('amt').value = '';
+        
+        update();
+    }
+
+    function del(i) {
+        if(confirm('確定要刪除呢條紀錄？')) {
+            data.splice(i, 1);
+            update();
+        }
+    }
+
+    update();
+</script>
+
+</body>
+</html>
